@@ -96,6 +96,70 @@ AHE 进化在以下情况下触发：
 4. 读 `manifest/changes.jsonl` 了解历史修改记录
 5. 继续这个进化循环——每一次任务都是一次学习机会
 
+## ⚠️ 更新 LobsterAI 后的恢复指南
+
+更新 LobsterAI 后，新模型可能不知道 AHE 的存在。按以下步骤恢复：
+
+### 情况1：一切正常（最常见）
+
+更新后文件都在，只是新模型不知道 AHE。
+
+**你只需要说一句话：**
+
+> 去读 D:\longxiaqiang\tools\ahe\SKILL.md，然后继续 AHE 进化循环。
+
+新模型读完 SKILL.md 就知道怎么做了。
+
+### 情况2：文件还在，但进化中断了
+
+AHE 目录完整，但积累的报告/模式可能丢失。
+
+**你说：**
+
+> 去读 D:\longxiaqiang\tools\ahe\README.md，重新初始化 AHE 系统。
+
+新模型会读 README.md，理解整个系统，然后从头开始积累。
+
+### 情况3：部分文件损坏
+
+**你说：**
+
+> AHE 系统损坏了，去 D:\longxiaqiang\tools\ahe\ 检查一下，能修就修，不能修就重建。
+
+新模型会检查目录，用 git 恢复损坏的文件。
+
+### 情况4：完全丢失（极少发生）
+
+**你说：**
+
+> AHE 系统没了，按 MEMORY.md 里的记录重建。
+
+MEMORY.md 里有 AHE 的部署记录和论文链接，新模型会重新创建。
+
+### 保底方案
+
+如果以上都不行，把这段话发给新模型：
+
+```
+请部署 AHE（Agentic Harness Engineering）自进化系统：
+1. 读论文 https://arxiv.org/abs/2604.25850
+2. 在 D:\longxiaqiang\tools\ahe\ 创建目录结构
+3. 7类组件文件：system-rules, tool-policies, environment, skills-registry, delegation-rules, memory-schema, workflow-patterns
+4. 三大可观测性：组件/经验/决策
+5. git 版本控制
+6. 每次任务失败后写分析报告，改组件文件，记录预测，下次验证
+```
+
+### 自动恢复机制
+
+以下文件在更新后通常不会丢失，它们会引导新模型发现 AHE：
+
+- **TOOLS.md** → 有 AHE 条目（新模型启动时读取）
+- **MEMORY.md** → 有 AHE 部署记录（新模型启动时读取）
+- **D:\longxiaqiang\tools\ahe\** → 磁盘文件，更新不删用户数据
+
+只要这三个在，新模型大概率能自己找到 AHE。
+
 ## 参考论文
 
 - **标题**: Agentic Harness Engineering: Observability-Driven Automatic Evolution of Coding-Agent Harnesses
