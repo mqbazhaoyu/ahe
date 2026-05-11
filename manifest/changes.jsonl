@@ -1,0 +1,3 @@
+// AHE Change Log
+// One JSON object per line: { timestamp, iteration, component, evidence, change, prediction }
+// Start with iteration 1 when applying the first change.

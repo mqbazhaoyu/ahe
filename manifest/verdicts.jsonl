@@ -1,0 +1,2 @@
+// AHE Verification Log
+// One JSON object per line: { timestamp, change_timestamp, task, result, note }

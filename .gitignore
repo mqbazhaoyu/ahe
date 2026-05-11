@@ -1,0 +1,10 @@
+# Don't track empty evidence reports
+evidence/reports/*
+!evidence/reports/.gitkeep
+
+# Don't track user-specific content in templates
+# (users should customize these for their own environment)
+
+# OS files
+.DS_Store
+Thumbs.db
