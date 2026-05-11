@@ -1,0 +1,13 @@
+{
+  "ignorePatterns": [
+    { "pattern": "^https://github.com/your-org/ahe.git$" }
+  ],
+  "replacementPatterns": [],
+  "httpHeaders": [
+    { "urls": ["https://arxiv.org"], "headers": { "Accept": "text/html" } }
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s"
+}

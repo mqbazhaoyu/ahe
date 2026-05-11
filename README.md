@@ -1,5 +1,9 @@
 # AHE - Agentic Harness Engineering
 
+[![Link Check](https://github.com/mqbazhaoyu/ahe/actions/workflows/link-check.yml/badge.svg)](https://github.com/mqbazhaoyu/ahe/actions/workflows/link-check.yml)
+[![Markdown Lint](https://github.com/mqbazhaoyu/ahe/actions/workflows/markdown-lint.yml/badge.svg)](https://github.com/mqbazhaoyu/ahe/actions/workflows/markdown-lint.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Let your AI Agent auto-evolve its own harness — tools, memory, environment, and workflows — from real task outcomes.**
 
 AHE (Agentic Harness Engineering) is a self-evolution framework for AI coding agents. Instead of manually tweaking prompts, AHE lets the agent **systematically analyze its own successes and failures, then self-improve its structural components** (tool descriptions, memory schemas, environment configs, workflow patterns).
@@ -106,16 +110,13 @@ Every component change is logged with: what changed, why, expected effect, risk.
 - **Adjust SKILL.md** trigger conditions for your agent's task patterns
 - **Extend report templates** in SKILL.md for domain-specific analysis
 
-## Example: First Evolution
+## Examples
 
-**Scenario**: Agent is asked to search for files and uses `find / -name` on a machine with 500GB data. Times out. User gets frustrated.
+See the [examples/](examples/) directory for detailed, step-by-step AHE evolution cycles with real code, analysis reports, and verification data.
 
-**AHE activates**:
-1. Writes report → `evidence/reports/2026-05-06-23-25.md`
-2. Identifies component: `tool-policies.md` (no mention of `es.exe` / Everything search)
-3. Logs change: "Added `es.exe` priority rule for file search tasks" → `manifest/changes.jsonl`
-4. Edits `tool-policies.md` — adds file search strategy
-5. Next file search task → uses `es.exe` → succeeds in milliseconds
+| Example | Component | Problem | Fix | Impact |
+|---------|-----------|---------|-----|--------|
+| [01: Blind File Search](examples/01-blind-file-search.md) | tool-policies | Full-drive recursive scan times out (120s+) | Indexed search priority rule | 120x faster, 0 user complaints |
 
 ## How to Contribute
 
