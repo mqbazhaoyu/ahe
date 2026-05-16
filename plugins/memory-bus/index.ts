@@ -24,11 +24,15 @@ import {
   SkillDefinition,
   SkillMeta,
   Trajectory,
+  CrystallizeOptions,
+  CrystallizePrompt,
 } from './types.js';
 
 // ─── Configuration ────────────────────────────────────────────
-const DEFAULT_DB_DIR = path.join(process.env.AHE_DATA_DIR || path.join(process.cwd(), 'data'), 'lancedb');
-const DEFAULT_SKILL_DIR = path.join(process.env.AHE_SKILL_DIR || process.cwd(), 'plugins', 'memory-bus', 'skills');
+// Resolve AHE root: go up from plugins/memory-bus to the ahe repo root
+const AHE_ROOT = process.env.AHE_ROOT || path.resolve(process.cwd(), '..', '..');
+const DEFAULT_DB_DIR = path.join(process.env.AHE_DATA_DIR || AHE_ROOT, 'data', 'lancedb');
+const DEFAULT_SKILL_DIR = path.join(process.env.AHE_SKILL_DIR || AHE_ROOT, 'plugins', 'memory-bus', 'skills');
 
 // Contamination formula weights (Grok R24 default)
 const C_WEIGHTS = {
@@ -201,20 +205,28 @@ class MemoryBus {
 
     // Parse JSON blobs, filter by text match, compute S'(t), rank
     const queryLower = q.query.toLowerCase();
+    // Split into keywords for broader matching
+    const keywords = queryLower.split(/\s+/).filter((k: string) => k.length > 2);
     const scored: MemoryResult[] = allRows
       .map((row: any) => {
         try {
           const event = JSON.parse(row.data as string) as MemoryEvent;
           // Skip seed rows
           if (event.id === '__seed__') return null;
-          // Full-text filter in JS (basic contains match)
-          const contentMatch = event.content?.toLowerCase().includes(queryLower);
-          const tagMatch = event.metadata?.tags?.some((t: string) => t.toLowerCase().includes(queryLower));
-          if (!contentMatch && !tagMatch) return null;
+          // Full-text filter: match any keyword in content or tags
+          const contentLower = event.content?.toLowerCase() || '';
+          const tagLower = (event.metadata?.tags || []).join(' ').toLowerCase();
+          const combined = contentLower + ' ' + tagLower;
+          const contentMatch = combined.includes(queryLower);
+          const keywordMatch = keywords.some((kw: string) => combined.includes(kw));
+          if (!contentMatch && !keywordMatch) return null;
           // Type filter
           if (q.type_filter && event.type !== q.type_filter) return null;
-          // Quarantine filter
-          if (event.contamination?.quarantine_level === 'isolated' || event.contamination?.quarantine_level === 'purged') return null;
+          // Quarantine filter — skip isolated/purged unless explicitly included
+          if (!q.include_isolated) {
+            const qLevel = event.contamination?.quarantine_level;
+            if (qLevel === 'isolated' || qLevel === 'purged') return null;
+          }
           const effectiveScore = this.computeEffectiveScore(event);
           return {
             event,
@@ -235,15 +247,15 @@ class MemoryBus {
   async memory_get(id: string): Promise<MemoryEvent | null> {
     await this.ensureInitialized();
     const eventsTable = await this.db.openTable('events');
-    // Since we stored JSON blobs, search and parse
+    // Use query() scan — .search() requires INVERTED index
     const results = await eventsTable
-      .search(id)
-      .limit(10)
+      .query()
+      .limit(500)
       .toArray();
     for (const row of results) {
       try {
-        const event = JSON.parse(row.data as string);
-        if (event.id === id) return event as MemoryEvent;
+        const event = JSON.parse(row.data as string) as MemoryEvent;
+        if (event.id === id) return event;
       } catch { /* skip malformed */ }
     }
     return null;
@@ -251,17 +263,34 @@ class MemoryBus {
 
   // ─── crystallize_skill ───────────────────────────────────
 
-  async crystallize_skill(trajectory: Trajectory): Promise<SkillDefinition> {
+  /**
+   * Crystallize a successful trajectory into a reusable SKILL.md.
+   *
+   * Two modes:
+   * 1. With `llmCall` — uses LLM via skill-crystallizer-prompt to generate production-quality SKILL.md
+   * 2. Without `llmCall` — uses template-based markdown generation (fast, but less refined)
+   */
+  async crystallize_skill(trajectory: Trajectory, options?: CrystallizeOptions): Promise<SkillDefinition> {
     await this.ensureInitialized();
 
     const skillId = uuidv4();
-    const skillName = this.deriveSkillName(trajectory);
+    const skillName = options?.skillName || this.deriveSkillName(trajectory);
 
-    // Build SKILL.md content from trajectory
-    const skillContent = this.buildSkillMarkdown(skillName, trajectory);
+    // Generate SKILL.md content (LLM or template)
+    let skillContent: string;
+    if (options?.llmCall) {
+      const prompt = this.buildCrystallizerPrompt(trajectory, skillName);
+      console.log('[MemoryBus] Calling LLM for skill crystallization...');
+      skillContent = await options.llmCall(prompt);
+      console.log(`[MemoryBus] LLM returned ${skillContent.length} chars`);
+    } else {
+      console.log('[MemoryBus] Using template-based crystallization (no LLM)');
+      skillContent = this.buildSkillMarkdown(skillName, trajectory, options?.tags);
+    }
 
     // Write to disk (SKILL.md — human-readable + git-versioned)
-    const skillDir = path.join(this.config.skillDir, skillName.toLowerCase().replace(/\s+/g, '-'));
+    const safeDirName = skillName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-\u4e00-\u9fff]/g, '');
+    const skillDir = path.join(this.config.skillDir, safeDirName);
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), skillContent, 'utf-8');
 
@@ -271,7 +300,7 @@ class MemoryBus {
       id: skillId,
       name: skillName,
       path: skillDir,
-      source_trajectory_ids: trajectory.steps.map(s => s.id || ''),
+      source_trajectory_ids: trajectory.steps.map(s => s.id || uuidv4()),
       created_at: new Date().toISOString(),
       success_count: 0,
       failure_count: 0,
@@ -279,6 +308,7 @@ class MemoryBus {
       last_used: null,
       decay_score: 1.0,
       verification_status: 'pending',
+      tags: options?.tags,
     };
     await skillsTable.add(lancedb.makeArrowTable([{ id: skillId, data: JSON.stringify(skillMeta) }]));
 
@@ -289,6 +319,23 @@ class MemoryBus {
     };
 
     return skill;
+  }
+
+  /** Build LLM prompt for skill crystallization (Grok R12 template) */
+  private buildCrystallizerPrompt(trajectory: Trajectory, skillName: string): CrystallizePrompt {
+    const successfulSteps = trajectory.steps.map((s, i) => {
+      let text = `Step ${i + 1}: ${s.description}`;
+      if (s.tool_call) text += `\n  Tool: ${s.tool_call}`;
+      if (s.result) text += `\n  Result: ${s.result}`;
+      if (s.verification) text += `\n  Verification: ${s.verification}`;
+      return text;
+    }).join('\n\n');
+
+    return {
+      system: `You are an expert at extracting reusable procedures from AI agent task trajectories.\n\nYour job is to read a successful task trajectory and produce a SKILL.md file that another instance of the same agent can use to reproduce the success.\n\nRules:\n1. Extract ONLY the steps that WORKED (ignore failed attempts within the same trajectory).\n2. Write steps in imperative form (e.g. "Use browser to navigate to the URL", not "I used browser...").\n3. Include VERIFICATION criteria for each step — how does the agent know the step succeeded?\n4. Include a FAILURE ESCAPE for each step — what to do if the step fails.\n5. Keep the procedure under 20 steps. If the trajectory is longer, group steps.\n6. Extract key entities mentioned (URLs, file paths, tool names, concepts) as tags.\n7. Link back to the source trajectory ID for provenance.\n8. Be SPECIFIC. "Search for the file" is bad. "Use es.exe with the pattern '*.xlsx' in D:\\longxiaqiang\\" is good.`,
+
+      user: `## Task Goal\n${trajectory.summary || trajectory.task_type || 'Unknown task'}\n\n## Successful Trajectory\n${successfulSteps}\n\n## Output Format\nProduce a SKILL.md with the following structure:\n\n# Skill: ${skillName}\n\n## Description\n{{ one_sentence_description }}\n\n## When to Use\n{{ trigger_conditions }}\n\n## Prerequisites\n{{ tools_and_knowledge_needed }}\n\n## Procedure\n### Step 1: {{ step_name }}\n- **Action**: {{ what_to_do }}\n- **Verify**: {{ how_to_know_it_worked }}\n- **On Failure**: {{ escape_hatch }}\n\n### Step 2: ...\n\n## Key Entities\n- {{ entity_name }}: {{ entity_type }} ({{ relevance }})\n\n## Success Signals\n- {{ list_of_verifiable_outcomes }}\n\n## Provenance\n- Source trajectory: ${trajectory.steps[0]?.id || 'auto-generated'}\n- Crystallized by: AHE Memory Bus v2.1\n- Created: ${new Date().toISOString()}\n\n## Tags\n{{ comma_separated_tags }}`,
+    };
   }
 
   // ─── Contamination Scoring (Grok R24) ───────────────────
@@ -394,7 +441,7 @@ class MemoryBus {
     return `skill-${Date.now()}`;
   }
 
-  private buildSkillMarkdown(name: string, trajectory: Trajectory): string {
+  private buildSkillMarkdown(name: string, trajectory: Trajectory, tags?: string[]): string {
     const lines: string[] = [
       `# ${name}`,
       '',

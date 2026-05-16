@@ -116,6 +116,7 @@ export interface SkillMeta {
   last_used: string | null;
   decay_score: number;
   verification_status: 'pending' | 'verified' | 'failed';
+  tags?: string[];
 }
 
 export interface SkillDefinition {
@@ -141,6 +142,22 @@ export interface Trajectory {
   dependencies?: string[];
   duration_ms?: number;
   success: boolean;
+}
+
+// ─── Crystallization LLM Options ────────────────────────────
+
+export interface CrystallizeOptions {
+  /** LLM call function — if provided, uses LLM to generate high-quality SKILL.md */
+  llmCall?: (prompt: CrystallizePrompt) => Promise<string>;
+  /** Override skill name (default: derived from trajectory) */
+  skillName?: string;
+  /** Tags to attach */
+  tags?: string[];
+}
+
+export interface CrystallizePrompt {
+  system: string;
+  user: string;
 }
 
 // ─── Compression ────────────────────────────────────────────
