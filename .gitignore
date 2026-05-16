@@ -1,0 +1,7 @@
+node_modules/
+data/
+plugins/memory-bus/node_modules/
+plugins/memory-bus/data/
+plugins/memory-bus/dist/
+plugins/memory-bus/plugins/
+*.tsbuildinfo
