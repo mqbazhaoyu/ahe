@@ -1,56 +1,99 @@
-# AHE Skill - 自我进化规则
+# AHE v2.0 Skill — 融合内存总线自进化系统
 
 ## 概述
 
-AHE（Agentic Harness Engineering）是我的自我进化系统。
-它让我能从每次任务中学习，持续改进工作方式。
+AHE v2.0 是基于 **Unified Memory Bus + Skill Crystallization** 的下一代自进化框架。
+核心理念来自 20 轮 Grok 设计评审 + GitHub 竞品对比：
+- **v1.0 弱项**：7组件独立但缺乏互联数据流，失败分析靠 LLM 临时判断
+- **v2.0 方案**：所有任务数据通过 Memory Bus 统一存储，由 Skill Crystallizer 自动固化经验
+- **v2.0 优势**：每次任务不仅记录失败，更**自动结晶成功过程**为可复用技能
 
 **这是给我自己用的，不是给用户用的。**
 
+## 架构总览
+
+```
+任务执行 → Memory Bus (memory_add)
+    ↓
+成功轨迹 → Skill Crystallizer → 生成 SKILL.md → 存盘 + LanceDB索引
+    ↓                   
+失败轨迹 → Failure Analysis → 识别受损组件 → AHE 变异操作符
+    ↓
+夜间做梦 → Bulk Compilation → KG更新 + Decay打分 + 缓存预计算
+```
+
 ## 触发条件
 
-### 条件1：任务失败后（立即触发）
+### 条件1：每个任务结束后（自动触发）
 
-触发信号：
-- 用户说"不对"、"重来"、"我不要这个"
-- 工具调用返回错误
-- 用户纠正了我的理解
-- 任务结果明显不理想
-
-执行步骤：
-1. 写分析报告到 `evidence/reports/YYYY-MM-DD-HH-MM.md`
-2. 识别涉及的组件（从7类中选）
-3. 提出修改方案 + 预测
-4. 记录到 `manifest/changes.jsonl`
-5. 执行修改（编辑组件文件）
-6. git commit
+无论成功或失败，任务完成后调用 `memory_add` 记录轨迹。
+- 成功 → 自动触发 Skill Crystallizer（从轨迹提取可复用步骤为 SKILL.md）
+- 失败 → 触发 Failure Analysis，激活 AHE 变异操作符
 
 ### 条件2：心跳期间（定期触发）
 
 触发信号：
 - 心跳轮询，无紧急任务
 - 距离上次进化 > 24小时
+- 距离上次 dreaming > 8小时
 
 执行步骤：
-1. 读取最近的 `evidence/reports/`（最近7天）
-2. 汇总到 `evidence/overview.md`
-3. 识别反复出现的模式
-4. 如果有模式，提出针对性修改
-5. 记录 + 执行
+1. 读取 LanceDB 中上次 dreaming 之后的新事件
+2. 如果新事件 > 20 条，触发轻量 dreaming（仅 Phase 1-2-4）
+3. 记录 dreaming 时间戳
 
 ### 条件3：每周审查（cron触发）
 
-触发信号：
-- 每周一次定时任务
+触发信号：每周日 03:00 定时任务
 
 执行步骤：
-1. 读取所有 `evidence/reports/`
-2. 更新 `evidence/overview.md` 和 `evidence/patterns.md`
-3. 检查 `manifest/changes.jsonl` 中未验证的修改
-4. 对未验证的修改，在下次类似任务时主动验证
-5. 汇总本周进化成果
+1. 运行完整夜景 dreaming 全流程（Phase 0-7）
+2. 更新组件文件 + git commit 所有夜间产生的技能/知识
+3. 汇总本周进化成果到 CHANGELOG.md
 
-## 分析报告模板
+## 7个确定性变异操作符（AHE核心）
+
+v2.0 不再让 LLM 临时决定改什么。每次失败后选择以下一个操作符：
+
+| # | 操作符 | 作用目标 | 触发条件 |
+|---|--------|---------|---------|
+| 1 | CREATE_SKILL | skills-registry.md | 成功轨迹可复用 |
+| 2 | MODIFY_SKILL | 已有 SKILL.md | 技能执行部分失败 |
+| 3 | ADJUST_TOOL_POLICY | tool-policies.md | 工具调用入口错误 |
+| 4 | UPDATE_ENV_KNOWLEDGE | environment.md | 环境/代理/路径变化 |
+| 5 | CHANGE_WORKFLOW | workflow-patterns.md | 流程步骤遗漏/多余 |
+| 6 | PRUNE_LOW_UTILITY | memory-schema.md | 低效记忆规则 |
+| 7 | RESTRUCTURE_MEMORY | memory-schema.md | 记忆区分度下降 |
+
+LLM 角色仅限于：分析失败 → 建议操作符编号 → 生成操作内容 → 由 AHE 引擎通过评分决定是否应用。
+
+## Memory Bus 接口
+
+### memory_add(event: MemoryEvent)
+记录单个事件。包含：type, content, metadata, entities[], relations[], provenance。
+
+### memory_query(intent: string, filters?: QueryFilter): MemoryResult[]
+语义搜索 + 元数据过滤。返回按相关性+重要性衰减加权排序的结果。
+
+### memory_get(id: string): MemoryEvent
+按 ID 获取单个事件及其完整上下文。
+
+### crystallize_skill(trajectory_id: string): SkillDefinition
+从成功轨迹中提取 SKILL.md。LLM prompt 模板见 components/skill-crystallizer-prompt.md。
+
+## 技能发现机制
+
+存储策略（Grok R17结论）：
+- **SKILL.md 文件存磁盘**（`plugins/memory-bus/skills/`），人类可读 + git可追踪
+- **索引元数据存 LanceDB**（text + vector），支持语义搜索
+- **UUID 为主键**，content hash 做去重
+
+加载优先级：
+1. LanceDB 语义搜索 → 找到匹配的 skill_id
+2. 从磁盘加载对应 SKILL.md
+3. 按 `success_count` DESC 排序返回 top-3
+
+## 分析报告模板（v2.0增强版）
 
 文件名：`evidence/reports/YYYY-MM-DD-HH-MM.md`
 
@@ -62,83 +105,81 @@ AHE（Agentic Harness Engineering）是我的自我进化系统。
 - 任务描述：[简述]
 - 结果：SUCCESS / FAILURE / PARTIAL
 
+## 轨迹摘要
+- 步骤数：[N]
+- 工具调用：[列表]
+- 成功步骤：[列表]
+- 失败步骤：[列表]
+
 ## 失败分析（仅FAILURE/PARTIAL）
 - 现象：[用户看到了什么问题]
 - 根因：[为什么会出问题]
-- 涉及组件：[system-rules / tool-policies / environment / skills-registry / delegation-rules / memory-schema / workflow-patterns]
+- 涉及组件：[列出受影响的7类组件之一]
+- 推荐操作符：[1-7]
 
-## 经验教训
-- 学到了什么：[具体]
-- 应该怎么改：[具体]
+## 成功结晶（仅SUCCESS）
+- 是否可结晶：[Y/N]
+- 结晶触发关键词：[]
+- 核心过程摘要：[从轨迹提炼的关键步骤]
 
 ## 预测
-- 如果改了 [X组件]，预期：[效果]
+- 如果应用操作符 [X]，预期：[效果]
 - 风险：[可能的副作用]
+- 回滚条件：[什么情况下应该回滚]
 ```
 
-## 变更记录格式
-
-文件名：`manifest/changes.jsonl`（每行一个JSON）
+## 变更记录格式（v2.0增强版）
 
 ```json
 {
-  "timestamp": "2026-05-06T23:30:00+08:00",
+  "timestamp": "2026-05-17T02:00:00+08:00",
   "iteration": 1,
-  "component": "tool-policies",
-  "evidence": "evidence/reports/2026-05-06-23-25.md",
-  "change": "添加了 web_fetch 对 X.com 的替代方案说明",
+  "operator": "CREATE_SKILL",
+  "component": "skills-registry",
+  "evidence": "evidence/reports/2026-05-17-01-45.md",
+  "change": "从成功轨迹结晶了新技能：X文章批量分析",
+  "skill_id": "a1b2c3d4-...",
   "prediction": {
-    "expected_fix": "下次抓X帖子时不再尝试直接web_fetch",
-    "at_risk": "可能误判某些X页面可直接抓取"
+    "expected_effect": "下次分析X文章时跳过手动判断，直接复制工作流",
+    "skill_reuse_rate_target": ">0.5 on similar tasks",
+    "at_risk": "X页面结构变化可能导致技能过时"
   }
 }
 ```
 
-## 验证记录格式
+## 组件修改规则（v2.0增强版）
 
-文件名：`manifest/verdicts.jsonl`（每行一个JSON）
+1. **每次只改一个组件文件**
+2. **先读后改，保留历史**
+3. **git commit = 操作符 + 证据引用**
+4. **预测可验证**：下次类似任务自动比对预测 vs 实际
+5. **高成功技能受保护**：`success_count >= 5` 的技能需要人工确认才能修改
+6. **衰减分 < 0.1 自动归档**：任务中不再加载低效技能
 
-```json
-{
-  "timestamp": "2026-05-07T10:00:00+08:00",
-  "change_timestamp": "2026-05-06T23:30:00+08:00",
-  "task": "抓取X帖子内容",
-  "result": "SUCCESS",
-  "note": "直接跳过web_fetch，用browser，一次成功"
-}
-```
+## 进化优先级（v2.0数据驱动）
 
-## 组件修改规则
+按 Grok R10/R17 综合结论排序：
+1. **Skill Crystallization** → `skills-registry.md` + 磁盘 SKILL.md（本周 MVP）
+2. **Memory Bus Schema** → `memory-schema.md`（LanceDB + vector + 混合存储）
+3. **Provenance Linking** → 每个事件关联来源和实体
+4. **KG Compiler** → entity/relation 提取 + 4-signal 打分（R8结论：LanceDB存储）
+5. **Decay Scoring** → `S(t) = Base × RecencyDecay × UtilityBoost × StreakModifier`（R4公式）
+6. **Full AHE Evolution Engine** → 7操作符 + sandbox实验 + 自动回滚
 
-1. **只改一个组件文件**：每次修改只涉及一个组件，不要跨组件
-2. **先读后改**：修改前先读取当前内容，理解上下文
-3. **追加为主**：大多数修改是追加新经验，不是重写
-4. **保留历史**：git commit 记录所有变更
-5. **可回滚**：如果新修改导致问题，git revert
+## 里程碑（v2.1路线图）
 
-## 进化优先级
+- [x] Week 0：Grok 25轮设计评审完成（2026-05-17）
+- [x] Week 0：tag v1.0.0 + v2.0.0-alpha + 创建 v2.0 分支 + 数据污染防御设计
+- [ ] Week 1：Memory Bus 插件实现 + Skill Crystallizer + Provenance Depth Tracking
+- [ ] Week 2：第一次完整进化循环（失败→操作符→验证）+ 三级隔离机制上线
+- [ ] Month 1：积累 20+ 结晶技能，Skill Reuse Rate > 0.3
+- [ ] Month 2：KG Compiler + Decay Scoring + 多模型对抗验证 pipeline
+- [ ] Month 3：Full AHE 进化引擎（7操作符 + sandbox实验）
 
-按收益排序（论文数据）：
-1. **长期记忆结构** (+5.6pp) → `memory-schema.md`
-2. **工具使用策略** (+3.3pp) → `tool-policies.md`
-3. **中间件/环境** (+2.2pp) → `environment.md`
-4. **系统规则** (-2.3pp) → `system-rules.md`（谨慎修改！）
-
-优先改收益高的组件。
-
-## 与现有系统的关系
-
-- **MEMORY.md** → 我的长期记忆，AHE 不直接改它，但会优化记忆结构
-- **AGENTS.md** → 我的行为准则，AHE 会提炼其中的规则到 `system-rules.md`
-- **TOOLS.md** → 工具笔记，AHE 会提炼到 `tool-policies.md`
-- **judge.py** → 自审工具，AHE 会参考它的输出
-
-AHE 不替代这些系统，而是让它们更好用。
-
-## 里程碑
-
-- [ ] 第1周：组件文件初始化，git 仓库建立
-- [ ] 第2周：第一次完整的进化循环（失败→分析→修改→验证）
-- [ ] 第1个月：积累 10+ 分析报告，识别 3+ 反复模式
-- [ ] 第2个月：进化循环自动化，心跳时自动触发
-- [ ] 第3个月：跨模型迁移测试（如果换了模型）
+### 数据污染防御专项里程碑
+- [x] 公式设计：S'(t) = S(t) × (1 - C)，4因子加权
+- [x] isolation 三级：clean → suspicious → isolated → purged
+- [x] immune 四策略：DELETE / CORRECT / FLAG / DEGRADE
+- [x] 二阶防御：多模型 ensemble + 确定性规则 ground truth
+- [ ] Week 1：Provenance depth 自动追踪上线（代价最小，收益最大）
+- [ ] Month 2：Multi-model adversarial validation pipeline
