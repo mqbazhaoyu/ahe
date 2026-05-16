@@ -1,7 +1,8 @@
-# 组件：工作流模板
+# 组件：工作流模板 v2.0
 
 > AHE 组件类型：Workflow Patterns
 > 收益预期：间接（通过减少重复试错）
+> v2.0 改进：加入 AI 漫剧制作模式 + Memory Bus 写入模式 + 夜间做梦定时任务 + 技能结晶模式
 > 原则：模板是经验的结晶，新任务可以复用
 
 ## 模式1：信息研究
@@ -13,6 +14,7 @@
 2. 提取关键信息
 3. 交叉分析
 4. 汇总报告
+5. memory_add(type="skill_execution", entities=[...])
 ```
 
 ### X/Twitter 研究子模式
@@ -33,6 +35,7 @@
 3. 用对应技能（docx/pptx/xlsx）
 4. 自审（judge.py，如果 >500字）
 5. 交付
+6. memory_add(type="skill_execution")
 ```
 
 ## 模式3：定时任务
@@ -80,6 +83,83 @@
 4. 操作完成 → 关闭页面
 ```
 
+## 模式7：v2.0 新增 — AI 漫剧制作（Grok R15 产出）
+
+```
+触发：用户要求写剧本/生成动画/角色设计
+步骤：
+1. memory_query(intent="角色设定", 查询已有角色档案)
+2. memory_query(intent="桥段结构", 查询已结晶的叙事模式技能)
+3. 加载相关技能 SKILL.md → 注入上下文
+4. 按技能步骤执行（脚本 → 故事板 → 动画 → 配音）
+5. 每完成一个阶段 → memory_add(type="skill_execution", entities=[
+   {name: "角色名", type: "character"},
+   {name: "弧线类型", type: "narrative_pattern"}
+])
+6. 用户认可后 → 触发 crystallize_skill（结晶新桥段模式）
+7. 飞轮效应：
+   写剧本 → 捕获角色/桥段 → 下次更快 → 积累更多模式 → Skill Reuse Rate ↑
+```
+
+### 核心捕获字段（Grok R15）
+- 角色口气规则（character_voice）：说话风格、常用词、情绪表达
+- 战斗升级模式（combat_progression）：从试探到决战的结构
+- 情感节奏（emotional_beats）：高潮/低谷/转场的频率和位置
+- 弧线模板（arc_template）：每段弧线的结构骨架
+
+## 模式8：v2.0 新增 — Memory Bus 写入
+
+```
+触发：每个任务结束后（自动）
+步骤：
+1. 汇总轨迹摘要（key steps, entities, outcome）
+2. memory_add({
+     type: "skill_execution" | "user_feedback",
+     content: 轨迹摘要文本,
+     entities: 从任务中提取的实体列表,
+     provenance: { source_event_id: 上一个事件的ID }
+   })
+3. 如果成功 → 触发 crystallize_skill
+4. 如果失败 → 写分析报告 → 选择 AHE 操作符
+```
+
+## 模式9：v2.0 新增 — 夜间做梦定时任务
+
+```
+触发：n8n cron（每天 02:00 CST）或 heartbeat 空闲检测 > 8h
+步骤：
+1. snapshot: 获取上次 dreaming 之后的所有新事件
+2. light_compress: 对未压缩事件做同步压缩
+3. entity_extract: LLM 提取实体/关系 → 更新 kg_nodes + kg_edges
+4. cluster: 加载 KG 到内存 → Louvain 聚类 → 盲点检测 → wiki 编译
+5. crystallize_batch: 批量审查成功轨迹，自动结晶新技能
+6. prune: 计算所有记忆 S(t)，剪枝 S(t) < 0.1 的事件
+7. index: 重建向量索引 + 缓存预计算
+8. lint: 断链检测、盲点标记、生成健康报告
+9. notify: 输出 dreaming 完成通知（包含：结晶技能数、剪枝事件数、KG 节点增减）
+```
+
+## 模式10：v2.0 新增 — 技能结晶
+
+```
+触发：任务成功 + 步骤 > 3 + 7天内无类似技能
+步骤：
+1. 从 Memory Bus 加载 trajectory_id 对应的事件
+2. 提取成功步骤（只取 type="tool_call" 且无后续失败反馈的步骤）
+3. 运行 LLM prompt（skill-crystallizer-prompt.md 中的模板）
+4. 验证输出 SKILL.md 模板完整性（检查清单见 prompt 文件）
+5. 存盘到 plugins/memory-bus/skills/{uuid}.md
+6. LanceDB 索引 skills_index 表
+7. 更新 skills-registry.md 的动态技能列表
+8. git add + commit（message: "CREATE_SKILL: {skill_name} from {trajectory_id}"）
+9. 记录到 changes.jsonl（operator: CREATE_SKILL）
+```
+
 ## 进化记录
 
-<!-- AHE 进化修改在此追加 -->
+### 2026-05-17 v2.0 升级
+- 加入 AI 漫剧制作模式（模式7）— Grok R15 飞轮效应分析
+- 加入 Memory Bus 写入模式（模式8）— 每个任务必做
+- 加入夜间做梦定时任务（模式9）— Phase 0-7 全流程
+- 加入技能结晶模式（模式10）— trajectory → SKILL.md end-to-end
+- 加入核心捕获字段（角色/战斗/情感/弧线模板）— 漫剧专用
