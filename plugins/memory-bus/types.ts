@@ -56,6 +56,31 @@ export interface MemoryEventMetadata {
   [key: string]: any; // extensible for domain-specific fields
 }
 
+// === Contamination Types (v2.1 - Grok R21-R25) ===
+
+export type QuarantineLevel = 'clean' | 'suspicious' | 'isolated' | 'purged';
+export type ValidationResult = 'verified' | 'contradicted' | 'unverified';
+
+export interface ContaminationInfo {
+  suspicion_score: number;               // 0-1, higher = more suspicious
+  quarantine_level: QuarantineLevel;
+  contamination_source_score?: number;   // 0-1, source trustworthiness
+  hallucination_likelihood?: number;     // 0-1, LLM hallucination probability
+  provenance_depth: number;              // hops from verified source
+  last_validated?: string;               // ISO-8601
+  validated_by?: string[];               // e.g. ["gpt-5", "claude-sonnet-4", "rule:path-check"]
+  validation_result?: ValidationResult;
+}
+
+export interface ContaminationScore {
+  source_penalty: number;                // w₁ × contamination_source_score
+  hallucination_penalty: number;          // w₂ × hallucination_likelihood
+  staleness_penalty: number;              // w₃ × (1 - e^(-days/τ))
+  depth_penalty: number;                  // w₄ × (1 - 1/(1+provenance_depth))
+  total_c: number;                        // sum of above
+  effective_score: number;                // S(t) × (1 - total_c)
+}
+
 export interface MemoryEvent {
   id: string; // UUID v4
   timestamp: string; // ISO-8601
@@ -68,6 +93,7 @@ export interface MemoryEvent {
   provenance: Provenance;
   compression_info: CompressionInfo;
   routing_hints: RoutingHints;
+  contamination: ContaminationInfo;      // v2.1: data contamination defense
 }
 
 // === Query Types ===

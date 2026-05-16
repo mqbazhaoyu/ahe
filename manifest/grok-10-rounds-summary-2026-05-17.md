@@ -154,3 +154,49 @@ Grok gave **extremely high-quality, honest feedback** across all 10 rounds. Key 
 The architectural pivot from "glue 5 desktop apps" → "extract algorithms as OpenClaw plugins with n8n orchestration" was the single most important turning point.
 
 **Next week's execution plan**: Bus → Crystallization → Provenance → (then) KG → Decay → Full AHE
+
+---
+
+## Rounds 21-25: Data Contamination Defense (2026-05-17 02:02-02:20)
+
+### Round 21: Contamination Patterns & Detection
+**5 Key Questions** answered with practical engineering:
+- Contamination patterns: Hallucination, cascading entity extraction, feedback loop solidification, decay paradox
+- Detection: Pre-ingestion validation gates (output verification checklist + semantic similarity check), post-crystallization adversarial validation, periodic re-verification
+- Quarantine mechanism: suspicion_score field in LanceDB, 3-level quarantine (suspicious→isolated→purged), adaptive scoring
+- Adversarial validation: Counter-factual testing, edge-case injection, cross-session validation
+- S(t)+C contamination penalty: Modified decay formula with contamination_source_score term
+
+### Round 22: Immune Response & Second-Order Prevention
+- 4-strategy severity matrix: Delete (proven contamination), Correct (fixable hallucination), Flag for human (high-impact but uncertain), Degrade (unverified pattern)
+- Second-order problem: Contamination detector itself can be contaminated (LLM validating LLM). Solution: Multi-model ensemble verification + deterministic rules as ground truth + human-in-the-loop for critical decisions
+
+### Round 23: Rapid-Fire 5 Questions
+1. Detector timing: Light sync on memory_add + deep async in dreaming
+2. Most dangerous silent pattern: "Quiet success poisoning" — skill works perfectly for 50 runs then fails catastrophically on edge case, but S(t) has protected it above 0.3 threshold
+3. Over-dependence prevention: Exploration bonus that periodically forces the agent to try alternative approaches even when a skill has high success_count
+4. Contamination metadata storage: Same LanceDB table (in-line columns for suspicion_score, quarantine_level, last_validated) — separate audit log is extra overhead
+5. Best ROI defense: Provenance depth tracking (anything > 2 hops from verified source gets suspicion_score += 0.2 per hop)
+
+### Round 24: Contamination Score Formula
+Modified S(t)+C:
+```
+C(memory) = w₁ × contamination_source_score 
+          + w₂ × hallucination_likelihood 
+          + w₃ × (1 - exp(-days_since_validation / τ))
+          + w₄ × (1 - 1 / (1 + provenance_depth))
+
+S'(t) = S(t) × (1 - C(memory))
+```
+Default weights: w₁=0.4, w₂=0.3, w₃=0.15, w₄=0.15
+τ (verification half-life) = 7 days
+
+### Round 25: Anti-Contamination Manifesto
+**Philosophy**: "Trust nothing by default, verify everything through multi-path validation, and isolate the unverified before it poisons the verified."
+
+**Week 1 TOP 3**:
+1. Provenance depth tracking in memory_add (every event gets depth score)
+2. Output validation checklist for crystallized skills (skill-crystallizer-prompt.md already has this)
+3. suspicion_score field in MemoryEvent metadata
+
+**Month 2 #1**: Multi-model adversarial validation pipeline (run crystallized skills through 2+ models, compare outputs, flag divergence > threshold)

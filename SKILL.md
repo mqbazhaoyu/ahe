@@ -166,12 +166,20 @@ LLM 角色仅限于：分析失败 → 建议操作符编号 → 生成操作内
 5. **Decay Scoring** → `S(t) = Base × RecencyDecay × UtilityBoost × StreakModifier`（R4公式）
 6. **Full AHE Evolution Engine** → 7操作符 + sandbox实验 + 自动回滚
 
-## 里程碑（v2.0路线图）
+## 里程碑（v2.1路线图）
 
-- [x] Week 0：Grok 20轮设计评审完成（2026-05-17）
-- [x] Week 0：tag v1.0.0 + 创建 v2.0 分支
-- [ ] Week 1：Memory Bus 插件骨架 + Skill Crystallizer + 启动数据接入
-- [ ] Week 2：第一次完整进化循环（失败→操作符→验证）
+- [x] Week 0：Grok 25轮设计评审完成（2026-05-17）
+- [x] Week 0：tag v1.0.0 + v2.0.0-alpha + 创建 v2.0 分支 + 数据污染防御设计
+- [ ] Week 1：Memory Bus 插件实现 + Skill Crystallizer + Provenance Depth Tracking
+- [ ] Week 2：第一次完整进化循环（失败→操作符→验证）+ 三级隔离机制上线
 - [ ] Month 1：积累 20+ 结晶技能，Skill Reuse Rate > 0.3
-- [ ] Month 2：KG Compiler + Decay Scoring 上线
+- [ ] Month 2：KG Compiler + Decay Scoring + 多模型对抗验证 pipeline
 - [ ] Month 3：Full AHE 进化引擎（7操作符 + sandbox实验）
+
+### 数据污染防御专项里程碑
+- [x] 公式设计：S'(t) = S(t) × (1 - C)，4因子加权
+- [x] isolation 三级：clean → suspicious → isolated → purged
+- [x] immune 四策略：DELETE / CORRECT / FLAG / DEGRADE
+- [x] 二阶防御：多模型 ensemble + 确定性规则 ground truth
+- [ ] Week 1：Provenance depth 自动追踪上线（代价最小，收益最大）
+- [ ] Month 2：Multi-model adversarial validation pipeline
