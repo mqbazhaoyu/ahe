@@ -1,5 +1,45 @@
 # AHE 进化日志
 
+## 迭代3：v2.1.0-alpha 功能代码 + 首次技能结晶（2026-05-17）
+
+### 代码实现
+- `plugins/memory-bus/index.ts`：MemoryBus 完整实现（memory_add/query/get/crystallize_skill）
+- LanceDB 真实持久化（events/skills/kg_nodes/kg_edges 4 张表）
+- 污染防御评分：S'(t) = S(t) × (1 - C)，4 维加权（w₁=0.4 来源 + w₂=0.3 幻觉 + w₃=0.15 陈旧 + w₄=0.15 深度）
+- 3 级隔离：clean → suspicious → isolated
+- 5 个测试场景全部通过：用户源/LLM低置信度/链式污染/语义查询/陈旧度
+- TypeScript `npx tsc --noEmit` 零错误
+- `.gitignore` 排除 node_modules
+
+### 首次技能结晶
+- 结晶技能：`grok-architecture-collaboration`（plugins/memory-bus/skills/grok-architecture-collaboration.md）
+- 来源：2026-05-17 与 Grok 25 轮架构对话
+- 内容：7 条核心原则 + 对话结构模板 + 踩坑记录 + 产出标准
+- 意义：AHE 系统首次成功运行「经验 → SKILL.md」技能结晶循环
+
+### 竞争分析
+- 完整竞品分析报告：`manifest/competitive-analysis-2026-05-17.md`
+- 覆盖：OpenSpace、EvoAgentX、GenericAgent、Hermes
+- AHE 独特护城河：数据污染防御系统（所有竞品均缺失）
+
+---
+
+## 迭代2：v2.1 污染防御 + 竞争分析（2026-05-17）
+
+### 数据污染防御系统
+- Grok R21-R25 设计（5 轮）
+- 污染评分公式：C = w₁×source + w₂×hallucination + w₃×staleness + w₄×depth
+- 3 层检测（摄入前/结晶后/定期复检）
+- 4 策略免疫响应（DELETE/CORRECT/FLAG/DEGRADE）
+- 2 阶防御（多模型集成 + 确定性规则 + 人机协同）
+- 识别「静默成功毒化」为最危险模式
+
+### 竞争分析报告
+- 完整分析：OpenSpace（云共享领先但无污染防御）、EvoAgentX（多智能体互补）、GenericAgent（理念最接近但无验证）、Hermes（仅提示词进化）
+- 战略定位：用污染防御作为独特护城河，与 OpenSpace 合作而非竞争
+
+---
+
 ## 迭代1：v2.0 Fusion Memory Bus（2026-05-17）
 
 ### 变更来源
