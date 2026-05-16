@@ -1,45 +1,33 @@
 /**
- * Memory Bus Plugin — types.ts
- * Unified Memory Bus type definitions for AHE v2.0
- * Grok R16 production-ready schema
+ * AHE Memory Bus — Type Definitions v2.1.0-alpha
+ * Covers: MemoryEvent, Query, Skills, Contamination, KG
  */
 
-// === Event Types ===
+// ─── Event Types ────────────────────────────────────────────
 
-export type MemoryEventType =
-  | 'user_input'
-  | 'agent_response'
-  | 'tool_call'
-  | 'tool_result'
-  | 'user_feedback'
-  | 'skill_execution'
-  | 'skill_crystallized'
-  | 'system_event';
+export type MemoryEventType = 'fact' | 'decision' | 'error' | 'skill' | 'entity' | 'relation' | 'compression';
 
-export interface Entity {
-  name: string;
-  type: string;
-  confidence: number; // 0-1
-}
-
-export interface Relation {
-  source: string;
-  type: string;
-  target: string;
-  confidence: number; // 0-1
+export interface MemoryEventMetadata {
+  created_at?: string;
+  source_agent?: string;
+  success_count?: number;
+  reuse_count?: number;
+  tags?: string[];
+  [key: string]: any;
 }
 
 export interface Provenance {
-  memory_id: string;
   source_event_id?: string;
-  parent_skill_id?: string;
+  source_type: 'user' | 'llm' | 'tool' | 'system';
+  confidence: number; // 0-1
+  depth: number;
 }
 
 export interface CompressionInfo {
-  light_compressed: boolean;
-  deep_compressed: boolean;
-  original_tokens?: number;
-  compressed_tokens?: number;
+  compressed: boolean;
+  original_ids?: string[];
+  compressed_at?: string;
+  method?: string;
 }
 
 export interface RoutingHints {
@@ -47,16 +35,7 @@ export interface RoutingHints {
   query_pattern?: string;
 }
 
-export interface MemoryEventMetadata {
-  session_id?: string;
-  importance?: number; // 0-1, initial guess
-  layer: 'vector' | 'facts' | 'compiled' | 'skills';
-  tags: string[];
-  related_ids: string[];
-  [key: string]: any; // extensible for domain-specific fields
-}
-
-// === Contamination Types (v2.1 - Grok R21-R25) ===
+// ─── Contamination Types (v2.1 - Grok R21-R25) ──────────────
 
 export type QuarantineLevel = 'clean' | 'suspicious' | 'isolated' | 'purged';
 export type ValidationResult = 'verified' | 'contradicted' | 'unverified';
@@ -64,22 +43,15 @@ export type ValidationResult = 'verified' | 'contradicted' | 'unverified';
 export interface ContaminationInfo {
   suspicion_score: number;               // 0-1, higher = more suspicious
   quarantine_level: QuarantineLevel;
-  contamination_source_score?: number;   // 0-1, source trustworthiness
-  hallucination_likelihood?: number;     // 0-1, LLM hallucination probability
-  provenance_depth: number;              // hops from verified source
-  last_validated?: string;               // ISO-8601
+  contamination_source_score?: number;   // 0-1, source trustworthiness (R24: w₁=0.4)
+  hallucination_likelihood?: number;     // 0-1, LLM hallucination probability (R24: w₂=0.3)
+  provenance_depth: number;              // hops from verified source (R25: +0.2 per hop)
+  last_validated?: string;               // ISO-8601 (R24: τ=7 day half-life)
   validated_by?: string[];               // e.g. ["gpt-5", "claude-sonnet-4", "rule:path-check"]
   validation_result?: ValidationResult;
 }
 
-export interface ContaminationScore {
-  source_penalty: number;                // w₁ × contamination_source_score
-  hallucination_penalty: number;          // w₂ × hallucination_likelihood
-  staleness_penalty: number;              // w₃ × (1 - e^(-days/τ))
-  depth_penalty: number;                  // w₄ × (1 - 1/(1+provenance_depth))
-  total_c: number;                        // sum of above
-  effective_score: number;                // S(t) × (1 - total_c)
-}
+// ─── Memory Event ───────────────────────────────────────────
 
 export interface MemoryEvent {
   id: string; // UUID v4
@@ -93,85 +65,89 @@ export interface MemoryEvent {
   provenance: Provenance;
   compression_info: CompressionInfo;
   routing_hints: RoutingHints;
-  contamination: ContaminationInfo;      // v2.1: data contamination defense
+  contamination: ContaminationInfo; // v2.1: data contamination defense
 }
 
-// === Query Types ===
+// ─── Knowledge Graph ────────────────────────────────────────
 
-export type LayerFilter = 'vector' | 'facts' | 'compiled' | 'skills';
-
-export interface MemoryQueryFilter {
-  layer_hints?: LayerFilter[];
-  tags?: string[];
-  since?: string; // ISO-8601
-  until?: string; // ISO-8601
-  entity_types?: string[];
-  min_importance?: number;
+export interface Entity {
+  id: string;
+  name: string;
+  type: string;
+  properties?: Record<string, any>;
 }
 
-export interface MemoryQueryOptions {
-  intent: string;
-  filters?: MemoryQueryFilter;
-  top_k?: number;
+export interface Relation {
+  id: string;
+  source_entity_id: string;
+  target_entity_id: string;
+  relation_type: string;
+  weight?: number;
 }
 
-// === Result Types ===
+// ─── Query Types ────────────────────────────────────────────
+
+export interface MemoryQuery {
+  query: string;
+  limit?: number;
+  type_filter?: MemoryEventType;
+  min_score?: number;
+  include_isolated?: boolean;
+  embedding?: number[];
+}
 
 export interface MemoryResult {
-  id: string;
-  score: number; // 0-1 relevance
-  decay_score?: number; // S(t)
   event: MemoryEvent;
+  score: number;
+  contamination_penalty: number;
 }
 
-// === Skill Types ===
+// ─── Skill Types ────────────────────────────────────────────
+
+export interface SkillMeta {
+  id: string;
+  name: string;
+  path: string;
+  source_trajectory_ids: string[];
+  created_at: string;
+  success_count: number;
+  failure_count: number;
+  reuse_count: number;
+  last_used: string | null;
+  decay_score: number;
+  verification_status: 'pending' | 'verified' | 'failed';
+}
 
 export interface SkillDefinition {
-  skill_id: string; // UUID v4
-  name: string;
+  meta: SkillMeta;
+  content: string; // SKILL.md content
+  trajectory_summary: string;
+}
+
+// ─── Trajectory (for crystallization) ───────────────────────
+
+export interface TrajectoryStep {
+  id?: string;
   description: string;
-  file_path: string;
-  success_count: number;
-  failure_streak: number;
-  last_used: string; // ISO-8601
-  decay_score: number; // 0-1
-  created_at: string; // ISO-8601
-  provenance: {
-    source_trajectory_id: string;
-    crystallized_by: string;
-  };
-  tags: string[];
+  tool_call?: string;
+  result?: string;
+  verification?: string;
 }
 
-// === Crystallization Types ===
-
-export interface CrystallizationRequest {
-  trajectory_id: string;
-  task_goal: string;
-  override_name?: string;
+export interface Trajectory {
+  task_type?: string;
+  summary?: string;
+  steps: TrajectoryStep[];
+  dependencies?: string[];
+  duration_ms?: number;
+  success: boolean;
 }
 
-export interface CrystallizationResult {
-  skill: SkillDefinition;
-  markdown_content: string;
-  verified: boolean;
-  failure_reason?: string;
-}
+// ─── Compression ────────────────────────────────────────────
 
-// === n8n Integration Types ===
-
-export interface N8nWebhookPayload {
-  action: 'memory_add' | 'memory_compile' | 'trigger_dreaming';
-  event?: MemoryEvent;
-  source: string;
-  timestamp: string;
-}
-
-// === Storage Config ===
-
-export interface StorageConfig {
-  lancedb_path: string;       // D:\longxiaqiang\tools\ahe\data\memory-bus.lancedb\
-  sqlite_path: string;        // D:\longxiaqiang\tools\ahe\data\facts.db
-  skills_disk_path: string;   // D:\longxiaqiang\tools\ahe\plugins\memory-bus\skills\
-  vector_dim: number;         // embedding dimension (model-dependent)
+export interface CompressionConfig {
+  method: 'light' | 'deep';
+  target_comparison_ratio?: number;
+  keep_entities?: boolean;
+  keep_key_decisions?: boolean;
 }
