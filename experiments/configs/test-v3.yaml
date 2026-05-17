@@ -1,0 +1,17 @@
+# AHE Experiment: test-v3
+name: test-v3
+description: Integration test experiment
+max_iterations: 5
+pass_rate_target: 0.8
+rollback_threshold: 0.1
+auto_rollback: true
+evolution_strategy: greedy
+n_variants: 1
+
+benchmark_tasks:
+  - id: task-1
+    name: Test Task 1
+    category: test
+  - id: task-2
+    name: Test Task 2
+    category: test

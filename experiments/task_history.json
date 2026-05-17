@@ -1,0 +1,34 @@
+[
+  {
+    "iteration": 1,
+    "timestamp": "2026-05-17T15:52:59.908Z",
+    "results": [
+      {
+        "id": "task-1",
+        "status": "fail",
+        "score": 0.3
+      },
+      {
+        "id": "task-2",
+        "status": "pass",
+        "score": 0.9
+      }
+    ]
+  },
+  {
+    "iteration": 2,
+    "timestamp": "2026-05-17T15:52:59.938Z",
+    "results": [
+      {
+        "id": "task-1",
+        "status": "pass",
+        "score": 0.85
+      },
+      {
+        "id": "task-2",
+        "status": "pass",
+        "score": 0.95
+      }
+    ]
+  }
+]

@@ -1,0 +1,72 @@
+{
+  "iteration": 2,
+  "timestamp": "2026-05-17T15:52:59.938Z",
+  "totalTasks": 2,
+  "matrix": {
+    "flipped": [
+      {
+        "taskId": "task-1",
+        "taskName": "Test Task 1",
+        "previous": {
+          "taskId": "task-1",
+          "taskName": "Test Task 1",
+          "status": "fail",
+          "score": 0.3,
+          "tokenCost": 100,
+          "durationMs": 500
+        },
+        "current": {
+          "taskId": "task-1",
+          "taskName": "Test Task 1",
+          "status": "pass",
+          "score": 0.85,
+          "tokenCost": 120,
+          "durationMs": 400
+        },
+        "changeState": "flipped",
+        "scoreDelta": 0.55
+      }
+    ],
+    "regressed": [],
+    "stable_pass": [
+      {
+        "taskId": "task-2",
+        "taskName": "Test Task 2",
+        "previous": {
+          "taskId": "task-2",
+          "taskName": "Test Task 2",
+          "status": "pass",
+          "score": 0.9,
+          "tokenCost": 200,
+          "durationMs": 300
+        },
+        "current": {
+          "taskId": "task-2",
+          "taskName": "Test Task 2",
+          "status": "pass",
+          "score": 0.95,
+          "tokenCost": 180,
+          "durationMs": 250
+        },
+        "changeState": "stable_pass",
+        "scoreDelta": 0.04999999999999993
+      }
+    ],
+    "stable_fail": [],
+    "infra_recovered": [],
+    "infra_lost": [],
+    "exception_to_fail": [],
+    "fail_to_exception": [],
+    "exception_stable": []
+  },
+  "summary": {
+    "flipped": 1,
+    "regressed": 0,
+    "stable_pass": 1,
+    "stable_fail": 0,
+    "infra_issues": 0,
+    "net_improvement": 1,
+    "passRateBefore": 0.5,
+    "passRateAfter": 1
+  }
+}

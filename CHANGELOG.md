@@ -1,5 +1,28 @@
 # AHE 进化日志
 
+## 迭代4：v3.0.0-alpha 平台无关生产级框架（2026-05-17）
+
+### 架构升级
+- 四层基础设施：L0 OpenClaw Integration + L1 MemoryBus + L2 ExperimentManager + L3 TraceAnalyzer + L4 ContaminationFirewall
+- 三层拆分战略：AHE Core（平台无关）+ Adapter（平台适配）+ Runtime（CLI/API）
+- 9 状态交叉迭代分析矩阵（移植自官方 AHE）
+- 实验管理器（状态机 + 事件驱动）
+- 轨迹分析器（可插拔 LLM 后端）
+- 污染防火墙中间件（多模型验证 + 传播追踪）
+
+### 新增文件
+- plugins/memory-bus/types_v3.ts — v3.0 扩展类型（ChangeMatrix, StateMachine, etc.）
+- plugins/memory-bus/experiment-manager.ts — 实验管理器
+- plugins/memory-bus/trace-analyzer.ts — 轨迹分析器
+- plugins/memory-bus/contamination-firewall.ts — 污染防火墙中间件
+- plugins/memory-bus/openclaw-integration.ts — L0 OpenClaw 集成层
+
+### 修改文件
+- SKILL.md — 完全重写 v3.0 架构
+- plugins/memory-bus/index.ts — 增加 computeChangeMatrix()
+- components/workflow-patterns.md — 增加模式11/12/13
+- components/skills-registry.md — 注册 3 个新技能
+
 ## 迭代3：v2.1.0-alpha 功能代码 + 首次技能结晶（2026-05-17）
 
 ### 代码实现

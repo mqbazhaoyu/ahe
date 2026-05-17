@@ -1,0 +1,57 @@
+# AHE Experiment Base Configuration
+# All experiments inherit from this file and can override specific values.
+
+name: default
+description: AHE self-evolution experiment
+
+max_iterations: 10
+pass_rate_target: 0.80
+rollback_threshold: 0.10  # auto-rollback if pass rate drops >10%
+auto_rollback: true
+evolution_strategy: greedy  # greedy | best_of_n | manual
+n_variants: 3  # for best_of_n strategy
+
+benchmark_tasks:
+  - id: file-search
+    name: File Search Task
+    category: tools
+    description: Locate a specific file in the workspace using es.exe or equivalent
+    
+  - id: code-execution
+    name: Code Execution Task
+    category: execution
+    description: Run a TypeScript/Python script and verify output
+    
+  - id: memory-retrieval
+    name: Memory Retrieval Task
+    category: memory
+    description: Find a previously stored fact using semantic search
+    
+  - id: web-fetch
+    name: Web Fetch Task
+    category: external
+    description: Fetch and parse content from a specific URL
+    
+  - id: file-edit
+    name: File Edit Task
+    category: tools
+    description: Make precise text edits to an existing file
+    
+  - id: skill-crystallization
+    name: Skill Crystallization Task
+    category: memory
+    description: Crystallize a successful trajectory into a reusable skill
+
+contamination:
+  weights:
+    w1_source: 0.4
+    w2_hallucination: 0.3
+    w3_staleness: 0.15
+    w4_depth: 0.15
+  thresholds:
+    suspicious: 0.2
+    isolated: 0.5
+    purged: 0.8
+  cross_validation:
+    enabled: false
+    min_models: 2

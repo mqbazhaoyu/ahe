@@ -1,12 +1,13 @@
 /**
  * AHE Memory Bus — Unified Memory Bus Plugin
- * v2.1.0-alpha — Fusion Memory Bus + Data Contamination Defense
+ * v3.0.0-alpha — Experiment Manager + 9-State Matrix + Contamination Firewall
  *
  * Core capabilities:
  *   memory_add()  — ingest with provenance tracking + contamination scoring
  *   memory_query() — semantic search with S'(t) decay ranking
  *   memory_get()   — direct retrieval by UUID
  *   crystallize_skill() — trajectory → SKILL.md via LLM
+ *   computeChangeMatrix() — 9-state cross-iteration analysis (from official AHE)
  */
 
 import * as lancedb from '@lancedb/lancedb';
@@ -525,6 +526,79 @@ class MemoryBus {
 
   private getWeight(key: keyof typeof C_WEIGHTS): number {
     return this.config.contaminationWeights[key] ?? C_WEIGHTS[key];
+  }
+
+  // ─── v3.0 Extension: Change Matrix ───────────────────────
+
+  /**
+   * Compute 9-state change matrix between two sets of task results.
+   * Directly adapted from official AHE's evolve.py change tracking.
+   */
+  computeChangeMatrix(
+    previous: Array<{ taskId: string; taskName: string; status: 'pass' | 'fail' | 'exception'; score: number }>,
+    current: Array<{ taskId: string; taskName: string; status: 'pass' | 'fail' | 'exception'; score: number }>
+  ): {
+    flipped: number;
+    regressed: number;
+    stable_pass: number;
+    stable_fail: number;
+    infra_recovered: number;
+    infra_lost: number;
+    exception_to_fail: number;
+    fail_to_exception: number;
+    exception_stable: number;
+    netImprovement: number;
+    passRateBefore: number;
+    passRateAfter: number;
+    details: Array<{ taskId: string; taskName: string; from: string; to: string; state: string; scoreDelta: number }>;
+  } {
+    const currentMap = new Map(current.map(t => [t.taskId, t]));
+    const details: any[] = [];
+    const counts = {
+      flipped: 0, regressed: 0, stable_pass: 0, stable_fail: 0,
+      infra_recovered: 0, infra_lost: 0, exception_to_fail: 0,
+      fail_to_exception: 0, exception_stable: 0,
+    };
+
+    for (const prev of previous) {
+      const cur = currentMap.get(prev.taskId);
+      if (!cur) continue;
+
+      const ps = prev.status;
+      const cs = cur.status;
+      let state: string;
+
+      if (ps === 'fail' && cs === 'pass') state = 'flipped';
+      else if (ps === 'pass' && cs === 'fail') state = 'regressed';
+      else if (ps === 'pass' && cs === 'pass') state = 'stable_pass';
+      else if (ps === 'fail' && cs === 'fail') state = 'stable_fail';
+      else if (ps === 'exception' && cs === 'pass') state = 'infra_recovered';
+      else if (ps === 'pass' && cs === 'exception') state = 'infra_lost';
+      else if (ps === 'exception' && cs === 'fail') state = 'exception_to_fail';
+      else if (ps === 'fail' && cs === 'exception') state = 'fail_to_exception';
+      else state = 'exception_stable';
+
+      (counts as any)[state]++;
+      details.push({
+        taskId: prev.taskId,
+        taskName: prev.taskName,
+        from: ps,
+        to: cs,
+        state,
+        scoreDelta: cur.score - prev.score,
+      });
+    }
+
+    const passBefore = previous.filter(t => t.status === 'pass').length / previous.length;
+    const passAfter = current.filter(t => t.status === 'pass').length / current.length;
+
+    return {
+      ...counts,
+      netImprovement: counts.flipped - counts.regressed,
+      passRateBefore: passBefore,
+      passRateAfter: passAfter,
+      details,
+    };
   }
 
   // ─── Internal ───────────────────────────────────────────

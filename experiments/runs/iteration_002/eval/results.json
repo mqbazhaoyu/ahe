@@ -1,0 +1,18 @@
+[
+  {
+    "taskId": "task-1",
+    "taskName": "Test Task 1",
+    "status": "pass",
+    "score": 0.85,
+    "tokenCost": 120,
+    "durationMs": 400
+  },
+  {
+    "taskId": "task-2",
+    "taskName": "Test Task 2",
+    "status": "pass",
+    "score": 0.95,
+    "tokenCost": 180,
+    "durationMs": 250
+  }
+]
