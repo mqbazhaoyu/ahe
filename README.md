@@ -1,8 +1,8 @@
 # AHE: Agentic Harness Engineering
 
 > **一个能自我进化的 AI Agent 框架**  
-> 论文：arXiv:2604.25850 | 许可证：MIT  
-> v3.0.0-alpha — 2026-05-17
+> 论文：arXiv:2604.25850 | 许可证：AGPL-3.0 + Commercial  
+> v3.1.0-phoenix-alpha — 2026-05-18
 
 ---
 
@@ -84,4 +84,15 @@ ahe/
 
 ## 📄 License
 
-MIT © 2026 mqbazhaoyu
+**AGPL-3.0 + Commercial License Addendum**
+
+AHE is free for **non-commercial use** — personal projects, open-source tools,
+academic research, hobby tinkering. No strings attached.
+
+If you use AHE in a **commercial product, SaaS platform, or proprietary system**,
+you need a commercial license. This is how we sustain the project.
+
+> 👉 **Short version**: Play with it, build with it, learn from it — **free**.
+>   Sell it as a product or service? We need to [talk](https://github.com/mqbazhaoyu/ahe/issues).
+
+© 2026 mqbazhaoyu
