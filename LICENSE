@@ -1,21 +1,79 @@
-MIT License
+# AGPL-3.0 License + Commercial License Addendum
+
+## Part I — GNU AFFERO GENERAL PUBLIC LICENSE (AGPL-3.0)
 
 Copyright (c) 2026 mqbazhaoyu
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+
+## Part II — Commercial License Addendum
+
+**1. Definitions**
+
+- "Commercial Use" means any use of the Software, in whole or in part,
+  that is intended for or directed toward commercial advantage or monetary
+  compensation, including but not limited to:
+  - Selling, licensing, or renting the Software or a product that
+    incorporates the Software;
+  - Operating a hosted service (SaaS, PaaS, etc.) that provides access
+    to the Software's functionality to third parties;
+  - Embedding the Software in a proprietary product that is not itself
+    distributed under the AGPL-3.0.
+
+- "Non-Commercial Use" means personal use, internal research, academic
+  study, open-source project contributions, and any use that does not
+  generate revenue or commercial advantage.
+
+**2. Grant of Commercial License**
+
+Notwithstanding the terms of the AGPL-3.0, if you wish to make Commercial
+Use of the Software without complying with the AGPL-3.0's requirement to
+distribute your complete corresponding source code, you must obtain a
+separate Commercial License from the copyright holder.
+
+**3. How to Obtain a Commercial License**
+
+Contact: mqbazhaoyu (via GitHub Issues or email — address TBD)
+
+A Commercial License grants you:
+- The right to use, modify, and integrate the Software into proprietary
+  products without AGPL-3.0 source-code disclosure obligations;
+- Access to priority support (if purchased);
+- Indemnification against third-party claims (if purchased).
+
+**4. Relationship with AGPL-3.0**
+
+- Non-Commercial Use is governed solely by the AGPL-3.0.
+- Commercial Use without a Commercial License must comply fully with
+  the AGPL-3.0, including its source-code distribution requirements.
+- This Addendum does not modify the AGPL-3.0 for Non-Commercial Use.
+
+---
+
+## Part III — Additional Permissions (AGPL-3.0 Section 7)
+
+Notwithstanding any other provision of the AGPL-3.0, the following
+additional permissions are granted:
+
+- **Personal Use Exception**: Individuals using the Software for their
+  own personal projects (not generating revenue) are not required to
+  disclose source code of their own applications that merely use the
+  Software as a library.
+
+- **Open-Source Ecosystem Exception**: The Software may be linked with,
+  or used as a dependency of, other open-source projects under OSI-approved
+  licenses, provided that the resulting combined work is distributed
+  under an OSI-approved open-source license.
